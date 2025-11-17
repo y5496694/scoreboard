@@ -25,7 +25,24 @@
             font-family: 'Noto Sans KR', sans-serif;
         }
 
-        /* 순위 카드 글로우 효과 */
+        /* 순위 카드 영역 축소 및 글로우 효과 */
+        #ranking-section {
+            transform-origin: top center;
+        }
+        @media (min-width: 768px) {
+            #ranking-section {
+                width: 50%;
+                margin-left: auto;
+                margin-right: auto;
+                transform: scale(0.85);
+            }
+        }
+        @media (max-width: 767px) {
+            #ranking-section {
+                transform: scale(0.9);
+            }
+        }
+
         #rank-1 {
             box-shadow: 0 0 25px rgba(251, 191, 36, 0.8); /* 1등 금색 */
         }
@@ -108,39 +125,39 @@
         </header>
 
         <!-- 실시간 순위 섹션 -->
-        <section class="mb-10 p-6 bg-white/70 backdrop-blur-md rounded-2xl shadow-lg">
+        <section id="ranking-section" class="mb-8 p-4 bg-white/70 backdrop-blur-md rounded-2xl shadow-lg">
             <h2 class="text-2xl font-semibold text-center text-gray-800 mb-6">🏆 실시간 순위 🏆</h2>
             <div class="flex flex-col md:flex-row justify-around gap-4">
-                
+
                 <!-- 2등 (Silver) -->
-                <div id="rank-2" class="flex-1 p-5 bg-gradient-to-br from-gray-300 to-gray-400 text-white rounded-xl text-center transition-all duration-300 transform md:mt-4">
-                    <span class="text-4xl block mb-2">🥈</span>
-                    <span class="text-xl font-bold">2등</span>
-                    <div class="mt-2 text-lg font-semibold" id="rank-2-class">---</div>
-                    <div class="text-2xl font-bold" id="rank-2-score">0점</div>
+                <div id="rank-2" class="flex-1 p-4 bg-gradient-to-br from-gray-300 to-gray-400 text-white rounded-xl text-center transition-all duration-300 transform md:mt-2">
+                    <span class="text-3xl block mb-2">🥈</span>
+                    <span class="text-lg font-bold">2등</span>
+                    <div class="mt-2 text-base font-semibold" id="rank-2-class">---</div>
+                    <div class="text-xl font-bold" id="rank-2-score">0점</div>
                 </div>
 
                 <!-- 1등 (Gold) -->
-                <div id="rank-1" class="flex-1 p-6 bg-gradient-to-br from-yellow-400 to-amber-500 text-white rounded-2xl text-center transition-all duration-300 transform md:-translate-y-4">
-                    <span class="text-5xl block mb-2">🥇</span>
-                    <span class="text-2xl font-bold">1등</span>
-                    <div class="mt-2 text-xl font-semibold" id="rank-1-class">---</div>
-                    <div class="text-3xl font-bold" id="rank-1-score">0점</div>
+                <div id="rank-1" class="flex-1 p-5 bg-gradient-to-br from-yellow-400 to-amber-500 text-white rounded-2xl text-center transition-all duration-300 transform md:-translate-y-2">
+                    <span class="text-4xl block mb-2">🥇</span>
+                    <span class="text-xl font-bold">1등</span>
+                    <div class="mt-2 text-lg font-semibold" id="rank-1-class">---</div>
+                    <div class="text-2xl font-bold" id="rank-1-score">0점</div>
                 </div>
 
                 <!-- 3등 (Bronze) -->
-                <div id="rank-3" class="flex-1 p-5 bg-gradient-to-br from-yellow-600 to-orange-700 text-white rounded-xl text-center transition-all duration-300 transform md:mt-4">
-                    <span class="text-4xl block mb-2">🥉</span>
-                    <span class="text-xl font-bold">3등</span>
-                    <div class="mt-2 text-lg font-semibold" id="rank-3-class">---</div>
-                    <div class="text-2xl font-bold" id="rank-3-score">0점</div>
+                <div id="rank-3" class="flex-1 p-4 bg-gradient-to-br from-yellow-600 to-orange-700 text-white rounded-xl text-center transition-all duration-300 transform md:mt-2">
+                    <span class="text-3xl block mb-2">🥉</span>
+                    <span class="text-lg font-bold">3등</span>
+                    <div class="mt-2 text-base font-semibold" id="rank-3-class">---</div>
+                    <div class="text-xl font-bold" id="rank-3-score">0점</div>
                 </div>
 
             </div>
         </section>
 
         <!-- 학년별 점수판 그리드 (1열로 변경) -->
-        <main id="grade-container" class="grid grid-cols-1 gap-6">
+        <main id="grade-container" class="grid grid-cols-1 gap-4">
             <!-- 학년별 카드가 여기에 동적으로 생성됩니다. -->
         </main>
 
@@ -225,6 +242,32 @@
                     <label for="subtitle-input" class="block text-sm font-medium text-gray-700">설명</label>
                     <input type="text" id="subtitle-input" class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400 focus:outline-none">
                 </div>
+                <div class="pt-2 border-t border-gray-200">
+                    <p class="text-sm font-semibold text-gray-800 mb-2">성장 단계 점수 기준</p>
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                        <label class="flex items-center space-x-2">
+                            <span class="w-16 text-gray-700">씨앗</span>
+                            <input type="number" id="threshold-seed" class="flex-1 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400 focus:outline-none" min="0" step="1">
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <span class="w-16 text-gray-700">새싹</span>
+                            <input type="number" id="threshold-sprout" class="flex-1 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400 focus:outline-none" min="0" step="1">
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <span class="w-16 text-gray-700">줄기</span>
+                            <input type="number" id="threshold-stem" class="flex-1 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400 focus:outline-none" min="0" step="1">
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <span class="w-16 text-gray-700">나무</span>
+                            <input type="number" id="threshold-tree" class="flex-1 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400 focus:outline-none" min="0" step="1">
+                        </label>
+                        <label class="flex items-center space-x-2 col-span-2">
+                            <span class="w-16 text-gray-700">꽃</span>
+                            <input type="number" id="threshold-flower" class="flex-1 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400 focus:outline-none" min="0" step="1">
+                        </label>
+                        <p class="col-span-2 text-xs text-gray-500">* 씨앗 기준은 항상 0점이며, 각 단계는 그 이하 단계와 같거나 높은 값으로 저장됩니다.</p>
+                    </div>
+                </div>
             </div>
             
             <div class="flex justify-end space-x-3 mt-6">
@@ -273,6 +316,8 @@
         // --- 3. Application Global Variables ---
         let classToDelete = null;
         let classToEdit = null;
+        const defaultThresholds = { seed: 0, sprout: 10, stem: 20, tree: 30, flower: 40 };
+        let growthThresholds = { ...defaultThresholds };
         const grades = [
             { id: 'kinder', name: '유치원', placeholder: '예: 햇님반' },
             { id: 'elem1', name: '초등 1학년', placeholder: '예: 1반' },
@@ -306,13 +351,13 @@
             const container = document.getElementById('grade-container');
             grades.forEach(grade => {
                 const card = document.createElement('div');
-                card.className = 'grade-card bg-white p-6 rounded-2xl shadow-md flex flex-col';
+                card.className = 'grade-card bg-white p-4 rounded-2xl shadow-md flex flex-col space-y-3';
                 card.innerHTML = `
-                    <header class="flex justify-between items-center border-b-2 border-blue-200 pb-3 mb-4">
-                        <h3 class="text-xl font-bold text-blue-700">${grade.name}</h3>
-                        <button 
+                    <header class="flex justify-between items-center border-b border-blue-200 pb-2">
+                        <h3 class="text-lg font-bold text-blue-700">${grade.name}</h3>
+                        <button
                             onclick="addClass('${grade.id}')"
-                            class="add-class-header-button bg-blue-500 text-white px-3 py-1 rounded-lg text-sm font-semibold hover:bg-blue-600 transition-all duration-200 flex items-center space-x-1"
+                            class="add-class-header-button bg-blue-500 text-white px-3 py-1 rounded-lg text-xs font-semibold hover:bg-blue-600 transition-all duration-200 flex items-center space-x-1"
                             title="학급 추가">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -320,7 +365,7 @@
                             <span>추가</span>
                         </button>
                     </header>
-                    <div id="class-list-${grade.id}" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-4 flex-grow">
+                    <div id="class-list-${grade.id}" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 flex-grow">
                     </div>
                 `;
                 container.appendChild(card);
@@ -339,22 +384,13 @@
                     const listContainer = document.getElementById(`class-list-${classData.gradeId}`);
                     if (listContainer) {
                         const classEntry = document.createElement('div');
-                        classEntry.className = 'class-entry bg-gray-50 rounded-xl border p-4 shadow-inner flex flex-col justify-between';
+                        classEntry.className = 'class-entry bg-gray-50 rounded-xl border p-3 shadow-inner flex flex-col justify-between';
                         classEntry.setAttribute('data-id', classId);
 
-                        let emoji = '🌰';
-                        if (classData.score >= 40) {
-                            emoji = '🌸';
-                        } else if (classData.score >= 30) {
-                            emoji = '🌳';
-                        } else if (classData.score >= 20) {
-                            emoji = '🌿';
-                        } else if (classData.score >= 10) {
-                            emoji = '🌱';
-                        }
+                        const emoji = getGrowthEmoji(classData.score);
                         classEntry.innerHTML = `
-                            <div class="flex items-center justify-between mb-3">
-                                <span class="class-name text-xl font-bold text-gray-800">${classData.name}</span>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="class-name text-lg font-bold text-gray-800">${classData.name}</span>
                                 <button onclick="openEditModal(this)" class="flex-shrink-0 text-gray-500 hover:text-blue-600 transition-colors duration-200 p-1 rounded-full hover:bg-blue-100" title="학급 수정">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -362,16 +398,16 @@
                                 </button>
                             </div>
                             <div class="flex items-center justify-center space-x-3 my-2">
-                                <span class="class-emoji text-3xl">${emoji}</span>
-                                <span class="class-score text-3xl font-bold text-blue-700">${classData.score}점</span>
+                                <span class="class-emoji text-2xl">${emoji}</span>
+                                <span class="class-score text-2xl font-bold text-blue-700">${classData.score}점</span>
                             </div>
-                            <div class="grid grid-cols-3 gap-2 mt-3">
-                                <button onclick="addScore(this, 1)" class="px-3 py-2 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-600 transition-all duration-200" title="미션 시도 +1점">+1</button>
-                                <button onclick="addScore(this, 5)" class="px-3 py-2 bg-blue-500 text-white rounded-lg text-sm font-semibold hover:bg-blue-600 transition-all duration-200" title="미션 성공 +5점">+5</button>
-                                <button onclick="addScore(this, 10)" class="px-3 py-2 bg-yellow-500 text-white rounded-lg text-sm font-semibold hover:bg-yellow-600 transition-all duration-200" title="모든 미션 성공 +10점">+10</button>
-                                <button onclick="addScore(this, -1)" class="px-3 py-2 bg-gray-400 text-white rounded-lg text-sm font-semibold hover:bg-gray-500 transition-all duration-200" title="점수 차감 -1점">-1</button>
-                                <button onclick="addScore(this, -5)" class="px-3 py-2 bg-gray-400 text-white rounded-lg text-sm font-semibold hover:bg-gray-500 transition-all duration-200" title="점수 차감 -5점">-5</button>
-                                <button onclick="addScore(this, -10)" class="px-3 py-2 bg-gray-400 text-white rounded-lg text-sm font-semibold hover:bg-gray-500 transition-all duration-200" title="점수 차감 -10점">-10</button>
+                            <div class="grid grid-cols-3 gap-2 mt-2">
+                                <button onclick="addScore(this, 1)" class="px-3 py-2 bg-green-500 text-white rounded-lg text-xs font-semibold hover:bg-green-600 transition-all duration-200" title="미션 시도 +1점">+1</button>
+                                <button onclick="addScore(this, 5)" class="px-3 py-2 bg-blue-500 text-white rounded-lg text-xs font-semibold hover:bg-blue-600 transition-all duration-200" title="미션 성공 +5점">+5</button>
+                                <button onclick="addScore(this, 10)" class="px-3 py-2 bg-yellow-500 text-white rounded-lg text-xs font-semibold hover:bg-yellow-600 transition-all duration-200" title="모든 미션 성공 +10점">+10</button>
+                                <button onclick="addScore(this, -1)" class="px-3 py-2 bg-gray-400 text-white rounded-lg text-xs font-semibold hover:bg-gray-500 transition-all duration-200" title="점수 차감 -1점">-1</button>
+                                <button onclick="addScore(this, -5)" class="px-3 py-2 bg-gray-400 text-white rounded-lg text-xs font-semibold hover:bg-gray-500 transition-all duration-200" title="점수 차감 -5점">-5</button>
+                                <button onclick="addScore(this, -10)" class="px-3 py-2 bg-gray-400 text-white rounded-lg text-xs font-semibold hover:bg-gray-500 transition-all duration-200" title="점수 차감 -10점">-10</button>
                             </div>
                         `;
                         listContainer.appendChild(classEntry);
@@ -389,6 +425,9 @@
                     const settings = doc.data();
                     document.getElementById('main-title').textContent = settings.title || '이은학교 E-페스티벌 학급 점수판';
                     document.getElementById('main-subtitle').textContent = settings.subtitle || '점수를 입력하면 순위가 실시간으로 집계됩니다.';
+                    growthThresholds = sanitizeThresholds(settings.thresholds || {});
+                    populateThresholdInputs();
+                    applyGrowthEmojis();
                 }
             }, (error) => {
                 console.error("Snapshot error on 'settings' document:", error);
@@ -419,6 +458,43 @@
 
         // --- 5. Application Functions ---
         // (모든 함수들이 올바른 DB 경로를 참조하도록 수정)
+
+        function getGrowthEmoji(score) {
+            const { sprout, stem, tree, flower } = growthThresholds;
+
+            if (score >= flower) return '🌸';
+            if (score >= tree) return '🌳';
+            if (score >= stem) return '🌿';
+            if (score >= sprout) return '🌱';
+            return '🌰';
+        }
+
+        function sanitizeThresholds(rawThresholds) {
+            const sanitized = { ...defaultThresholds, ...rawThresholds };
+            sanitized.seed = 0;
+            sanitized.sprout = Math.max(sanitized.seed, Number(sanitized.sprout) || 0);
+            sanitized.stem = Math.max(sanitized.sprout, Number(sanitized.stem) || sanitized.sprout);
+            sanitized.tree = Math.max(sanitized.stem, Number(sanitized.tree) || sanitized.stem);
+            sanitized.flower = Math.max(sanitized.tree, Number(sanitized.flower) || sanitized.tree);
+            return sanitized;
+        }
+
+        function populateThresholdInputs() {
+            document.getElementById('threshold-seed').value = growthThresholds.seed;
+            document.getElementById('threshold-sprout').value = growthThresholds.sprout;
+            document.getElementById('threshold-stem').value = growthThresholds.stem;
+            document.getElementById('threshold-tree').value = growthThresholds.tree;
+            document.getElementById('threshold-flower').value = growthThresholds.flower;
+        }
+
+        function applyGrowthEmojis() {
+            document.querySelectorAll('.class-entry').forEach(entry => {
+                const scoreElement = entry.querySelector('.class-score');
+                const emojiElement = entry.querySelector('.class-emoji');
+                const score = parseInt(scoreElement.textContent) || 0;
+                emojiElement.textContent = getGrowthEmoji(score);
+            });
+        }
 
         // 학급 추가 함수
         function addClass(gradeId) {
@@ -613,7 +689,8 @@
         function openAdminSettingsModal() {
             document.getElementById('title-input').value = document.getElementById('main-title').textContent.trim();
             document.getElementById('subtitle-input').value = document.getElementById('main-subtitle').textContent.trim();
-            
+            populateThresholdInputs();
+
             document.getElementById('admin-settings-modal-bg').style.display = 'flex';
         }
 
@@ -626,13 +703,23 @@
         function saveAdminSettings() {
             const newTitle = document.getElementById('title-input').value.trim();
             const newSubtitle = document.getElementById('subtitle-input').value.trim();
-            
+            const thresholdsInput = {
+                seed: 0,
+                sprout: parseInt(document.getElementById('threshold-sprout').value, 10),
+                stem: parseInt(document.getElementById('threshold-stem').value, 10),
+                tree: parseInt(document.getElementById('threshold-tree').value, 10),
+                flower: parseInt(document.getElementById('threshold-flower').value, 10)
+            };
+            growthThresholds = sanitizeThresholds(thresholdsInput);
+
             // *** 수정: 원래 컬렉션 경로("settings") 사용 ***
             db.collection("settings").doc("main").set({
                 title: newTitle,
-                subtitle: newSubtitle
+                subtitle: newSubtitle,
+                thresholds: growthThresholds
             }, { merge: true });
-            
+
+            applyGrowthEmojis();
             hideAdminSettingsModal();
         }
     </script>
