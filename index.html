@@ -27,20 +27,9 @@
 
         /* 순위 카드 영역 축소 및 글로우 효과 */
         #ranking-section {
+            width: 100%;
+            max-width: 100%;
             transform-origin: top center;
-        }
-        @media (min-width: 768px) {
-            #ranking-section {
-                width: 50%;
-                margin-left: auto;
-                margin-right: auto;
-                transform: scale(0.85);
-            }
-        }
-        @media (max-width: 767px) {
-            #ranking-section {
-                transform: scale(0.9);
-            }
         }
 
         #rank-1 {
@@ -117,7 +106,7 @@
     <div class="container mx-auto p-4 md:p-8 max-w-7xl">
         
         <!-- 앱 타이틀 -->
-        <header class="text-center mb-8">
+        <header class="text-center mb-4">
             <h1 id="main-title" class="text-3xl md:text-4xl font-bold text-blue-800">
                 이은학교 E-페스티벌 학급 점수판
             </h1>
@@ -125,8 +114,8 @@
         </header>
 
         <!-- 실시간 순위 섹션 -->
-        <section id="ranking-section" class="mb-8 p-4 bg-white/70 backdrop-blur-md rounded-2xl shadow-lg">
-            <h2 class="text-2xl font-semibold text-center text-gray-800 mb-6">🏆 실시간 순위 🏆</h2>
+        <section id="ranking-section" class="mb-4 p-4 bg-white/70 backdrop-blur-md rounded-2xl shadow-lg">
+            <h2 class="text-2xl font-semibold text-center text-gray-800 mb-4">🏆 실시간 순위 🏆</h2>
             <div class="flex flex-col md:flex-row justify-around gap-4">
 
                 <!-- 2등 (Silver) -->
