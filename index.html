@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>이은학교 E-페스티벌 점수판</title>
+    <!-- Tailwind CSS 로드 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Noto Sans KR 폰트 로드 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* Noto Sans KR 폰트 적용 */
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        /* 순위 카드 글로우 효과 */
+        #rank-1 {
+            box-shadow: 0 0 25px rgba(251, 191, 36, 0.8); /* 1등 금색 */
+        }
+        #rank-2 {
+            box-shadow: 0 0 20px rgba(156, 163, 175, 0.8); /* 2등 은색 */
+        }
+        #rank-3 {
+            box-shadow: 0 0 15px rgba(209, 139, 71, 0.8); /* 3등 동색 */
+        }
+
+        /* 학급 추가 시 부드러운 애니메이션 */
+        .class-entry {
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* 숫자 입력 필드의 스피너(증감 버튼) 숨기기 */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        /* 삭제 팝업(모달) 스타일 */
+        #delete-modal-bg {
+            display: none; /* 기본적으로 숨김 */
+            position: fixed;
+            z-index: 50;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            /* Flexbox로 중앙 정렬 */
+            display: none; 
+            justify-content: center;
+            align-items: center;
+        }
+        #delete-modal {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 400px;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-purple-100 min-h-screen">
+
+    <!-- 관리자 설정 버튼 (톱니바퀴) -->
+    <button id="open-admin-settings" class="absolute top-4 right-4 md:top-8 md:right-8 text-gray-600 hover:text-blue-700 transition-colors duration-200 z-10" title="관리자 설정">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826 3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+    </button>
+
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+        
+        <!-- 앱 타이틀 -->
+        <header class="text-center mb-8">
+            <h1 id="main-title" class="text-3xl md:text-4xl font-bold text-blue-800">
+                이은학교 E-페스티벌 학급 점수판
+            </h1>
+            <p id="main-subtitle" class="text-lg text-gray-600 mt-2">점수를 입력하면 순위가 실시간으로 집계됩니다.</p>
+        </header>
+
+        <!-- 실시간 순위 섹션 -->
+        <section class="mb-10 p-6 bg-white/70 backdrop-blur-md rounded-2xl shadow-lg">
+            <h2 class="text-2xl font-semibold text-center text-gray-800 mb-6">🏆 실시간 순위 🏆</h2>
+            <div class="flex flex-col md:flex-row justify-around gap-4">
+                
+                <!-- 2등 (Silver) -->
+                <div id="rank-2" class="flex-1 p-5 bg-gradient-to-br from-gray-300 to-gray-400 text-white rounded-xl text-center transition-all duration-300 transform md:mt-4">
+                    <span class="text-4xl block mb-2">🥈</span>
+                    <span class="text-xl font-bold">2등</span>
+                    <div class="mt-2 text-lg font-semibold" id="rank-2-class">---</div>
+                    <div class="text-2xl font-bold" id="rank-2-score">0점</div>
+                </div>
+
+                <!-- 1등 (Gold) -->
+                <div id="rank-1" class="flex-1 p-6 bg-gradient-to-br from-yellow-400 to-amber-500 text-white rounded-2xl text-center transition-all duration-300 transform md:-translate-y-4">
+                    <span class="text-5xl block mb-2">🥇</span>
+                    <span class="text-2xl font-bold">1등</span>
+                    <div class="mt-2 text-xl font-semibold" id="rank-1-class">---</div>
+                    <div class="text-3xl font-bold" id="rank-1-score">0점</div>
+                </div>
+
+                <!-- 3등 (Bronze) -->
+                <div id="rank-3" class="flex-1 p-5 bg-gradient-to-br from-yellow-600 to-orange-700 text-white rounded-xl text-center transition-all duration-300 transform md:mt-4">
+                    <span class="text-4xl block mb-2">🥉</span>
+                    <span class="text-xl font-bold">3등</span>
+                    <div class="mt-2 text-lg font-semibold" id="rank-3-class">---</div>
+                    <div class="text-2xl font-bold" id="rank-3-score">0점</div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- 학년별 점수판 그리드 (1열로 변경) -->
+        <main id="grade-container" class="grid grid-cols-1 gap-6">
+            <!-- 학년별 카드가 여기에 동적으로 생성됩니다. -->
+        </main>
+
+    </div>
+
+    <!-- 수정 확인 모달 (새로 추가) -->
+    <div id="edit-modal-bg" class="flex justify-center items-center" style="display: none; position: fixed; z-index: 50; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5);">
+        <div id="edit-modal" class="bg-white p-6 rounded-lg shadow-xl" style="width: 90%; max-width: 400px;">
+            <h4 class="text-xl font-bold mb-4">학급 수정</h4>
+            <label for="edit-name-input" class="block text-sm font-medium text-gray-700">새 학급 이름</label>
+            <input type="text" id="edit-name-input" class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400 focus:outline-none" placeholder="새 학급 이름 입력">
+            
+            <div class="flex justify-between space-x-3 mt-5">
+                <!-- 삭제 버튼 (왼쪽) -->
+                <button id="trigger-delete" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200">
+                    삭제
+                </button>
+                
+                <!-- 취소 및 확인 버튼 (오른쪽) -->
+                <div class="flex space-x-3">
+                    <button id="cancel-edit" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition-colors duration-200">
+                        취소
+                    </button>
+                    <button id="confirm-edit" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200">
+                        확인
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- *** 오류 수정: 누락된 삭제 확인 모달 추가 *** -->
+    <div id="delete-modal-bg" class="flex justify-center items-center">
+        <div id="delete-modal" class="bg-white p-6 rounded-lg shadow-xl" style="width: 90%; max-width: 400px;">
+            <h4 class="text-xl font-bold mb-4">학급 삭제</h4>
+            <p class="text-gray-600 mb-3">삭제하려면 관리자 비밀번호를 입력하세요.</p>
+            <input type="password" id="password-input" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400 focus:outline-none" placeholder="비밀번호 20230301">
+            <span id="modal-error" class="text-red-500 text-sm mt-1 h-4 block"></span>
+            
+            <div class="flex justify-end space-x-3 mt-4">
+                <button id="cancel-delete" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition-colors duration-200">
+                    취소
+                </button>
+                <button id="confirm-delete" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200">
+                    삭제
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 관리자 비밀번호 입력 모달 -->
+    <div id="admin-pass-modal-bg" class="flex justify-center items-center" style="display: none; position: fixed; z-index: 60; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5);">
+        <div id="admin-pass-modal" class="bg-white p-6 rounded-lg shadow-xl" style="width: 90%; max-width: 400px;">
+            <h4 class="text-xl font-bold mb-4">관리자 인증</h4>
+            <p class="text-gray-600 mb-3">관리자 비밀번호를 입력하세요.</p>
+            <input type="password" id="admin-password-input" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400 focus:outline-none" placeholder="비밀번호">
+            <span id="admin-pass-error" class="text-red-500 text-sm mt-1 h-4 block"></span>
+            
+            <div class="flex justify-end space-x-3 mt-4">
+                <button id="cancel-admin-pass" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition-colors duration-200">
+                    취소
+                </button>
+                <button id="confirm-admin-pass" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200">
+                    확인
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 관리자 설정 모달 (제목 수정 등) -->
+    <div id="admin-settings-modal-bg" class="flex justify-center items-center" style="display: none; position: fixed; z-index: 70; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5);">
+        <div id="admin-settings-modal" class="bg-white p-6 rounded-lg shadow-xl" style="width: 90%; max-width: 500px;">
+            <h4 class="text-xl font-bold mb-6">관리자 설정</h4>
+            
+            <div class="space-y-4">
+                <div>
+                    <label for="title-input" class="block text-sm font-medium text-gray-700">제목</label>
+                    <input type="text" id="title-input" class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400 focus:outline-none">
+                </div>
+                <div>
+                    <label for="subtitle-input" class="block text-sm font-medium text-gray-700">설명</label>
+                    <input type="text" id="subtitle-input" class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400 focus:outline-none">
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3 mt-6">
+                <button id="cancel-admin-settings" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition-colors duration-200">
+                    취소
+                </button>
+                <button id="save-admin-settings" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200">
+                    저장
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // 삭제할 학급을 임시 저장하는 변수
+        let classToDelete = null;
+        // 수정할 학급을 임시 저장하는 변수 (새로 추가)
+        let classToEdit = null;
+
+        // 관리할 학년 목록
+        const grades = [
+            { id: 'kinder', name: '유치원', placeholder: '예: 햇님반' },
+            { id: 'elem1', name: '초등 1학년', placeholder: '예: 1반' },
+            { id: 'elem2', name: '초등 2학년', placeholder: '예: 1반' },
+            { id: 'elem3', name: '초등 3학년', placeholder: '예: 1반' },
+            { id: 'elem4', name: '초등 4학년', placeholder: '예: 1반' },
+            { id: 'elem5', name: '초등 5학년', placeholder: '예: 1반' },
+            { id: 'elem6', name: '초등 6학년', placeholder: '예: 1반' }
+        ];
+
+        // 페이지 로드 시 학년별 카드 생성
+        window.onload = function() {
+            const container = document.getElementById('grade-container');
+            
+            grades.forEach(grade => {
+                const card = document.createElement('div');
+                card.className = 'grade-card bg-white p-6 rounded-2xl shadow-md flex flex-col';
+                card.innerHTML = `
+                    <header class="flex justify-between items-center border-b-2 border-blue-200 pb-3 mb-4">
+                        <h3 class="text-xl font-bold text-blue-700">${grade.name}</h3>
+                        <!-- '학급 추가' 버튼 (헤더 오른쪽) -->
+                        <button 
+                            onclick="addClass('${grade.id}')"
+                            class="add-class-header-button bg-blue-500 text-white px-3 py-1 rounded-lg text-sm font-semibold hover:bg-blue-600 transition-all duration-200 flex items-center space-x-1"
+                            title="학급 추가">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            <span>추가</span>
+                        </button>
+                    </header>
+                    
+                    <!-- 학급 목록: 2열, md:4열, lg:6열 그리드로 변경 -->
+                    <div id="class-list-${grade.id}" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-4 flex-grow">
+                        <!-- 학급 목록이 여기에 추가됩니다. -->
+                        
+                        <!-- 기존 '학급 추가' 버튼 (카드 스타일) 삭제됨 -->
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            // 모달 이벤트 리스너 설정
+            document.getElementById('cancel-delete').onclick = hideModal;
+            document.getElementById('confirm-delete').onclick = confirmDelete;
+            
+            // 모달 바깥 영역 클릭 시 닫기
+            document.getElementById('delete-modal-bg').onclick = function(e) {
+                if (e.target === e.currentTarget) {
+                    hideModal();
+                }
+            };
+            
+            // Enter 키로 삭제 시도
+            document.getElementById('password-input').onkeydown = function(e) {
+                if (e.key === 'Enter') {
+                    confirmDelete();
+                }
+            };
+
+            // *** 수정 모달 이벤트 리스너 설정 (새로 추가) ***
+            document.getElementById('cancel-edit').onclick = hideEditModal;
+            document.getElementById('confirm-edit').onclick = confirmEdit;
+            document.getElementById('trigger-delete').onclick = triggerDeleteFromEdit;
+            
+            // 수정 모달 바깥 영역 클릭 시 닫기
+            document.getElementById('edit-modal-bg').onclick = function(e) {
+                if (e.target === e.currentTarget) {
+                    hideEditModal();
+                }
+            };
+            
+            // Enter 키로 수정 시도
+            document.getElementById('edit-name-input').onkeydown = function(e) {
+                if (e.key === 'Enter') {
+                    confirmEdit();
+                }
+            };
+            
+            // *** 관리자 설정 모달 이벤트 리스너 (새로 추가) ***
+            
+            // 톱니바퀴 버튼 클릭
+            document.getElementById('open-admin-settings').onclick = openAdminPassModal;
+            
+            // 비밀번호 모달
+            document.getElementById('cancel-admin-pass').onclick = hideAdminPassModal;
+            document.getElementById('confirm-admin-pass').onclick = checkAdminPassword;
+            document.getElementById('admin-pass-modal-bg').onclick = function(e) {
+                if (e.target === e.currentTarget) hideAdminPassModal();
+            };
+            document.getElementById('admin-password-input').onkeydown = function(e) {
+                if (e.key === 'Enter') checkAdminPassword();
+            };
+            
+            // 설정 변경 모달
+            document.getElementById('cancel-admin-settings').onclick = hideAdminSettingsModal;
+            document.getElementById('save-admin-settings').onclick = saveAdminSettings;
+            document.getElementById('admin-settings-modal-bg').onclick = function(e) {
+                if (e.target === e.currentTarget) hideAdminSettingsModal();
+            };
+        };
+
+        // 학급 추가 함수
+        function addClass(gradeId) {
+            const listContainer = document.getElementById(`class-list-${gradeId}`);
+            // 'add-class-button'을 찾던 로직 삭제
+            
+            // 현재 학급 수를 세어서 다음 반 번호를 지정합니다.
+            const classCount = listContainer.querySelectorAll('.class-entry').length;
+            const newClassName = `${classCount + 1}반`;
+            
+            const classEntry = document.createElement('div');
+            // 클래스 카드 디자인 변경
+            classEntry.className = 'class-entry bg-gray-50 rounded-xl border p-4 shadow-inner flex flex-col justify-between';
+            
+            classEntry.innerHTML = `
+                <!-- 상단: 반 이름, 삭제 버튼 -->
+                <div class="flex items-center justify-between mb-3">
+                    <span class="class-name text-xl font-bold text-gray-800">${newClassName}</span>
+                    <button 
+                        onclick="openEditModal(this)"
+                        class="flex-shrink-0 text-gray-500 hover:text-blue-600 transition-colors duration-200 p-1 rounded-full hover:bg-blue-100"
+                        title="학급 수정">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- 중앙: 이모지, 점수 -->
+                <div class="flex items-center justify-center space-x-3 my-2">
+                    <span class="class-emoji text-3xl">🌰</span>
+                    <span class="class-score text-3xl font-bold text-blue-700">0점</span>
+                </div>
+                
+                <!-- 하단: 점수 버튼 (그리드로 변경) -->
+                <div class="grid grid-cols-3 gap-2 mt-3">
+                    <button 
+                        onclick="addScore(this, 1)" 
+                        class="px-3 py-2 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-600 transition-all duration-200"
+                        title="미션 시도 +1점">
+                        +1
+                    </button>
+                    <button 
+                        onclick="addScore(this, 5)" 
+                        class="px-3 py-2 bg-blue-500 text-white rounded-lg text-sm font-semibold hover:bg-blue-600 transition-all duration-200"
+                        title="미션 성공 +5점">
+                        +5
+                    </button>
+                    <button 
+                        onclick="addScore(this, 10)" 
+                        class="px-3 py-2 bg-yellow-500 text-white rounded-lg text-sm font-semibold hover:bg-yellow-600 transition-all duration-200"
+                        title="모든 미션 성공 +10점">
+                        +10
+                    </button>
+                    <button 
+                        onclick="addScore(this, -1)" 
+                        class="px-3 py-2 bg-gray-400 text-white rounded-lg text-sm font-semibold hover:bg-gray-500 transition-all duration-200"
+                        title="점수 차감 -1점">
+                        -1
+                    </button>
+                    <button 
+                        onclick="addScore(this, -5)" 
+                        class="px-3 py-2 bg-gray-400 text-white rounded-lg text-sm font-semibold hover:bg-gray-500 transition-all duration-200"
+                        title="점수 차감 -5점">
+                        -5
+                    </button>
+                    <button 
+                        onclick="addScore(this, -10)" 
+                        class="px-3 py-2 bg-gray-400 text-white rounded-lg text-sm font-semibold hover:bg-gray-500 transition-all duration-200"
+                        title="점수 차감 -10점">
+                        -10
+                    </button>
+                </div>
+            `;
+            
+            // *** '학급 추가' 버튼 *앞에* 삽입하던 로직을 '컨테이너의 맨 뒤에' 추가하는 것으로 변경 ***
+            listContainer.appendChild(classEntry);
+        }
+
+        // 점수 추가/차감 함수
+        function addScore(buttonElement, pointsToAdd) {
+            const classEntry = buttonElement.closest('.class-entry');
+            const scoreElement = classEntry.querySelector('.class-score');
+            const emojiElement = classEntry.querySelector('.class-emoji');
+            
+            // "점" 글자를 제외하고 숫자만 파싱합니다.
+            let currentScore = parseInt(scoreElement.textContent) || 0;
+            currentScore += pointsToAdd;
+
+            // 점수가 0보다 작아지지 않도록 보정
+            if (currentScore < 0) {
+                currentScore = 0;
+            }
+            
+            scoreElement.textContent = `${currentScore}점`;
+
+            // 점수에 따라 이모지 업데이트
+            if (currentScore >= 40) {
+                emojiElement.textContent = '🌸'; // 꽃
+            } else if (currentScore >= 30) {
+                emojiElement.textContent = '🌳'; // 나무
+            } else if (currentScore >= 20) {
+                emojiElement.textContent = '🌿'; // 줄기/새싹
+            } else if (currentScore >= 10) {
+                emojiElement.textContent = '🌱'; // 새싹
+            } else {
+                emojiElement.textContent = '🌰'; // 씨앗
+            }
+            
+            // 점수 변경 후 즉시 순위를 업데이트합니다.
+            updateRankings();
+        }
+
+        // *** '학급 수정' 모달 열기 함수 (새로 추가) ***
+        function openEditModal(buttonElement) {
+            classToEdit = buttonElement.closest('.class-entry');
+            const currentName = classToEdit.querySelector('.class-name').textContent;
+            
+            document.getElementById('edit-name-input').value = currentName;
+            document.getElementById('edit-modal-bg').style.display = 'flex';
+            document.getElementById('edit-name-input').focus();
+        }
+
+        // *** '학급 수정' 모달 숨기기 함수 (새로 추가) ***
+        function hideEditModal() {
+            document.getElementById('edit-modal-bg').style.display = 'none';
+            classToEdit = null;
+        }
+
+        // *** '학급 수정' 팝업에서 '확인' 눌렀을 때 (새로 추가) ***
+        function confirmEdit() {
+            const newNameInput = document.getElementById('edit-name-input');
+            const newName = newNameInput.value.trim();
+            
+            if (classToEdit && newName) {
+                classToEdit.querySelector('.class-name').textContent = newName;
+                updateRankings(); // 이름이 순위표에 나오므로 업데이트
+            }
+            hideEditModal();
+        }
+
+        // *** '학급 수정' 팝업에서 '삭제' 눌렀을 때 (새로 추가) ***
+        function triggerDeleteFromEdit() {
+            // 수정 중이던 학급을 삭제 대상으로 지정
+            classToDelete = classToEdit;
+            
+            // 수정 팝업 닫기
+            hideEditModal(); 
+            
+            // 삭제 팝업 열기 (기존 로직 재사용)
+            document.getElementById('modal-error').textContent = '';
+            document.getElementById('password-input').value = '';
+            document.getElementById('delete-modal-bg').style.display = 'flex';
+            document.getElementById('password-input').focus();
+        }
+
+
+        // 학급 삭제 함수 (모달 띄우기) - 이 함수는 이제 triggerDeleteFromEdit에 의해 호출됨
+        function deleteClass(buttonElement) {
+            classToDelete = buttonElement.closest('.class-entry');
+            document.getElementById('modal-error').textContent = '';
+            document.getElementById('password-input').value = '';
+            document.getElementById('delete-modal-bg').style.display = 'flex';
+            document.getElementById('password-input').focus();
+        }
+
+        // 모달 숨기기 함수
+        function hideModal() {
+            document.getElementById('delete-modal-bg').style.display = 'none';
+            classToDelete = null;
+        }
+
+        // 삭제 승인 함수
+        function confirmDelete() {
+            const password = document.getElementById('password-input').value;
+            const errorEl = document.getElementById('modal-error');
+            
+            if (password === '20230301') { // 비밀번호 수정
+                if (classToDelete) {
+                    classToDelete.remove();
+                    updateRankings();
+                }
+                hideModal();
+            } else {
+                errorEl.textContent = '비밀번호가 틀렸습니다.';
+                document.getElementById('password-input').value = '';
+                document.getElementById('password-input').focus();
+            }
+        }
+
+
+        // 순위 업데이트 함수
+        function updateRankings() {
+            const allClasses = [];
+            
+            // 모든 학급 항목을 순회하며 정보 수집
+            document.querySelectorAll('.class-entry').forEach(entry => {
+                const classNameElement = entry.querySelector('.class-name');
+                const scoreElement = entry.querySelector('.class-score');
+                const gradeCard = entry.closest('.grade-card');
+                const gradeName = gradeCard.querySelector('h3').textContent;
+                
+                const className = classNameElement.textContent;
+                const score = parseInt(scoreElement.textContent) || 0; // "점"을 제외하고 파싱
+                
+                allClasses.push({ name: className, score: score, grade: gradeName });
+            });
+            
+            // 점수 기준으로 내림차순 정렬
+            allClasses.sort((a, b) => b.score - a.score);
+            
+            // 1등, 2등, 3등 UI 업데이트
+            const rankElements = [
+                { id: 1, classEl: 'rank-1-class', scoreEl: 'rank-1-score' },
+                { id: 2, classEl: 'rank-2-class', scoreEl: 'rank-2-score' },
+                { id: 3, classEl: 'rank-3-class', scoreEl: 'rank-3-score' }
+            ];
+            
+            rankElements.forEach((rank, index) => {
+                const classEl = document.getElementById(rank.classEl);
+                const scoreEl = document.getElementById(rank.scoreEl);
+                
+                const data = allClasses[index];
+                
+                if (data) {
+                    classEl.textContent = `${data.grade} ${data.name}`;
+                    scoreEl.textContent = `${data.score}점`;
+                } else {
+                    classEl.textContent = '---';
+                    scoreEl.textContent = `0점`;
+                }
+            });
+        }
+        
+        // *** 관리자 설정 관련 함수들 (새로 추가) ***
+
+        // 관리자 비밀번호 모달 열기
+        function openAdminPassModal() {
+            document.getElementById('admin-password-input').value = '';
+            document.getElementById('admin-pass-error').textContent = '';
+            document.getElementById('admin-pass-modal-bg').style.display = 'flex';
+            document.getElementById('admin-password-input').focus();
+        }
+
+        // 관리자 비밀번호 모달 닫기
+        function hideAdminPassModal() {
+            document.getElementById('admin-pass-modal-bg').style.display = 'none';
+        }
+
+        // 관리자 비밀번호 확인
+        function checkAdminPassword() {
+            const password = document.getElementById('admin-password-input').value;
+            const errorEl = document.getElementById('admin-pass-error');
+            
+            if (password === '20230301') {
+                hideAdminPassModal();
+                openAdminSettingsModal();
+            } else {
+                errorEl.textContent = '비밀번호가 틀렸습니다.';
+                document.getElementById('admin-password-input').value = '';
+                document.getElementById('admin-password-input').focus();
+            }
+        }
+
+        // 관리자 설정 모달 열기 (비밀번호 성공 후)
+        function openAdminSettingsModal() {
+            // 현재 제목과 설명을 입력창에 미리 채워넣기
+            document.getElementById('title-input').value = document.getElementById('main-title').textContent.trim();
+            document.getElementById('subtitle-input').value = document.getElementById('main-subtitle').textContent.trim();
+            
+            document.getElementById('admin-settings-modal-bg').style.display = 'flex';
+        }
+
+        // 관리자 설정 모달 닫기
+        function hideAdminSettingsModal() {
+            document.getElementById('admin-settings-modal-bg').style.display = 'none';
+        }
+
+        // 관리자 설정 저장
+        function saveAdminSettings() {
+            const newTitle = document.getElementById('title-input').value.trim();
+            const newSubtitle = document.getElementById('subtitle-input').value.trim();
+            
+            if (newTitle) {
+                document.getElementById('main-title').textContent = newTitle;
+            }
+            // 설명은 비워둘 수도 있도록 빈 문자열도 허용
+            document.getElementById('main-subtitle').textContent = newSubtitle;
+            
+            hideAdminSettingsModal();
+        }
+    </script>
+
+</body>
+</html>
