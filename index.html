@@ -42,6 +42,15 @@
             box-shadow: 0 0 15px rgba(209, 139, 71, 0.8); /* 3등 동색 */
         }
 
+        /* 순위 카드 세로 간격 축소 */
+        .rank-card {
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
+        }
+        .rank-card .rank-label {
+            margin-bottom: 0.25rem;
+        }
+
         /* 학급 추가 시 부드러운 애니메이션 */
         .class-entry {
             animation: fadeIn 0.4s ease-out;
@@ -91,6 +100,27 @@
             width: 90%;
             max-width: 400px;
         }
+
+        /* 잠금 상태 표시용 */
+        .class-entry.locked {
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .class-entry.locked .class-score-row {
+            justify-content: center;
+        }
+        .class-entry.locked .class-score-row span {
+            text-align: center;
+        }
+        .class-entry.locked .class-score-row .class-emoji {
+            margin-right: 0.25rem;
+        }
+
+        /* 관리자 설정 모달 스크롤 */
+        #admin-settings-modal {
+            max-height: 90vh;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-purple-100 min-h-screen">
@@ -119,27 +149,27 @@
             <div class="flex flex-col md:flex-row justify-around gap-4">
 
                 <!-- 2등 (Silver) -->
-                <div id="rank-2" class="flex-1 p-4 bg-gradient-to-br from-gray-300 to-gray-400 text-white rounded-xl text-center transition-all duration-300 transform md:mt-2">
-                    <span class="text-3xl block mb-2">🥈</span>
+                <div id="rank-2" class="rank-card flex-1 p-3 bg-gradient-to-br from-gray-300 to-gray-400 text-white rounded-xl text-center transition-all duration-300 transform md:mt-2">
+                    <span class="text-3xl block rank-label">🥈</span>
                     <span class="text-lg font-bold">2등</span>
-                    <div class="mt-2 text-base font-semibold" id="rank-2-class">---</div>
-                    <div class="text-xl font-bold" id="rank-2-score">0점</div>
+                    <div class="mt-1 text-base font-semibold" id="rank-2-class">---</div>
+                    <div class="text-xl font-bold mt-1" id="rank-2-score">0점</div>
                 </div>
 
                 <!-- 1등 (Gold) -->
-                <div id="rank-1" class="flex-1 p-5 bg-gradient-to-br from-yellow-400 to-amber-500 text-white rounded-2xl text-center transition-all duration-300 transform md:-translate-y-2">
-                    <span class="text-4xl block mb-2">🥇</span>
+                <div id="rank-1" class="rank-card flex-1 p-4 bg-gradient-to-br from-yellow-400 to-amber-500 text-white rounded-2xl text-center transition-all duration-300 transform md:-translate-y-2">
+                    <span class="text-4xl block rank-label">🥇</span>
                     <span class="text-xl font-bold">1등</span>
-                    <div class="mt-2 text-lg font-semibold" id="rank-1-class">---</div>
-                    <div class="text-2xl font-bold" id="rank-1-score">0점</div>
+                    <div class="mt-1 text-lg font-semibold" id="rank-1-class">---</div>
+                    <div class="text-2xl font-bold mt-1" id="rank-1-score">0점</div>
                 </div>
 
                 <!-- 3등 (Bronze) -->
-                <div id="rank-3" class="flex-1 p-4 bg-gradient-to-br from-yellow-600 to-orange-700 text-white rounded-xl text-center transition-all duration-300 transform md:mt-2">
-                    <span class="text-3xl block mb-2">🥉</span>
+                <div id="rank-3" class="rank-card flex-1 p-3 bg-gradient-to-br from-yellow-600 to-orange-700 text-white rounded-xl text-center transition-all duration-300 transform md:mt-2">
+                    <span class="text-3xl block rank-label">🥉</span>
                     <span class="text-lg font-bold">3등</span>
-                    <div class="mt-2 text-base font-semibold" id="rank-3-class">---</div>
-                    <div class="text-xl font-bold" id="rank-3-score">0점</div>
+                    <div class="mt-1 text-base font-semibold" id="rank-3-class">---</div>
+                    <div class="text-xl font-bold mt-1" id="rank-3-score">0점</div>
                 </div>
 
             </div>
@@ -158,6 +188,11 @@
             <h4 class="text-xl font-bold mb-4">학급 수정</h4>
             <label for="edit-name-input" class="block text-sm font-medium text-gray-700">새 학급 이름</label>
             <input type="text" id="edit-name-input" class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400 focus:outline-none" placeholder="새 학급 이름 입력">
+
+            <label class="flex items-center space-x-2 mt-3 text-sm text-gray-700">
+                <input type="checkbox" id="edit-lock-checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded">
+                <span>학급 잠금 (점수 조정 비활성화)</span>
+            </label>
             
             <div class="flex justify-between space-x-3 mt-5">
                 <!-- 삭제 버튼 (왼쪽) -->
@@ -254,11 +289,23 @@
                             <span class="w-16 text-gray-700">꽃</span>
                             <input type="number" id="threshold-flower" class="flex-1 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400 focus:outline-none" min="0" step="1">
                         </label>
-                        <p class="col-span-2 text-xs text-gray-500">* 씨앗 기준은 항상 0점이며, 각 단계는 그 이하 단계와 같거나 높은 값으로 저장됩니다.</p>
+                    <p class="col-span-2 text-xs text-gray-500">* 씨앗 기준은 항상 0점이며, 각 단계는 그 이하 단계와 같거나 높은 값으로 저장됩니다.</p>
                     </div>
                 </div>
+
+                <div class="pt-4 border-t border-gray-200 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-semibold text-gray-800">입력 잠금</span>
+                        <label class="flex items-center space-x-2 text-sm text-gray-700">
+                            <input type="checkbox" id="overall-lock-toggle" class="h-4 w-4 text-blue-600 border-gray-300 rounded">
+                            <span>전체 잠금</span>
+                        </label>
+                    </div>
+
+                    <div id="admin-class-management" class="space-y-4"></div>
+                </div>
             </div>
-            
+
             <div class="flex justify-end space-x-3 mt-6">
                 <button id="cancel-admin-settings" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition-colors duration-200">
                     취소
@@ -307,6 +354,8 @@
         let classToEdit = null;
         const defaultThresholds = { seed: 0, sprout: 10, stem: 20, tree: 30, flower: 40 };
         let growthThresholds = { ...defaultThresholds };
+        let classDataCache = new Map();
+        let lockSettings = { overall: false, grades: {} };
         const grades = [
             { id: 'kinder', name: '유치원', placeholder: '예: 햇님반' },
             { id: 'elem1', name: '초등 1학년', placeholder: '예: 1반' },
@@ -344,15 +393,6 @@
                 card.innerHTML = `
                     <header class="flex justify-between items-center border-b border-blue-200 pb-2">
                         <h3 class="text-lg font-bold text-blue-700">${grade.name}</h3>
-                        <button
-                            onclick="addClass('${grade.id}')"
-                            class="add-class-header-button bg-blue-500 text-white px-3 py-1 rounded-lg text-xs font-semibold hover:bg-blue-600 transition-all duration-200 flex items-center space-x-1"
-                            title="학급 추가">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                            </svg>
-                            <span>추가</span>
-                        </button>
                     </header>
                     <div id="class-list-${grade.id}" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 flex-grow">
                     </div>
@@ -364,45 +404,13 @@
             // 인증이 완료되었으므로 이제 Snapshot 리스너를 붙입니다.
             // *** 수정: 원래 컬렉션 경로("classes") 사용 ***
             db.collection("classes").onSnapshot((querySnapshot) => {
-                // 기존 학급 목록 초기화
-                document.querySelectorAll("[id^=class-list-]").forEach(list => list.innerHTML = '');
-
+                classDataCache = new Map();
                 querySnapshot.forEach((doc) => {
                     const classData = doc.data();
-                    const classId = doc.id;
-                    const listContainer = document.getElementById(`class-list-${classData.gradeId}`);
-                    if (listContainer) {
-                        const classEntry = document.createElement('div');
-                        classEntry.className = 'class-entry bg-gray-50 rounded-xl border p-3 shadow-inner flex flex-col justify-between';
-                        classEntry.setAttribute('data-id', classId);
-
-                        const emoji = getGrowthEmoji(classData.score);
-                        classEntry.innerHTML = `
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="class-name text-lg font-bold text-gray-800">${classData.name}</span>
-                                <button onclick="openEditModal(this)" class="flex-shrink-0 text-gray-500 hover:text-blue-600 transition-colors duration-200 p-1 rounded-full hover:bg-blue-100" title="학급 수정">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                    </svg>
-                                </button>
-                            </div>
-                            <div class="flex items-center justify-center space-x-3 my-2">
-                                <span class="class-emoji text-2xl">${emoji}</span>
-                                <span class="class-score text-2xl font-bold text-blue-700">${classData.score}점</span>
-                            </div>
-                            <div class="grid grid-cols-3 gap-2 mt-2">
-                                <button onclick="addScore(this, 1)" class="px-3 py-2 bg-green-500 text-white rounded-lg text-xs font-semibold hover:bg-green-600 transition-all duration-200" title="미션 시도 +1점">+1</button>
-                                <button onclick="addScore(this, 5)" class="px-3 py-2 bg-blue-500 text-white rounded-lg text-xs font-semibold hover:bg-blue-600 transition-all duration-200" title="미션 성공 +5점">+5</button>
-                                <button onclick="addScore(this, 10)" class="px-3 py-2 bg-yellow-500 text-white rounded-lg text-xs font-semibold hover:bg-yellow-600 transition-all duration-200" title="모든 미션 성공 +10점">+10</button>
-                                <button onclick="addScore(this, -1)" class="px-3 py-2 bg-gray-400 text-white rounded-lg text-xs font-semibold hover:bg-gray-500 transition-all duration-200" title="점수 차감 -1점">-1</button>
-                                <button onclick="addScore(this, -5)" class="px-3 py-2 bg-gray-400 text-white rounded-lg text-xs font-semibold hover:bg-gray-500 transition-all duration-200" title="점수 차감 -5점">-5</button>
-                                <button onclick="addScore(this, -10)" class="px-3 py-2 bg-gray-400 text-white rounded-lg text-xs font-semibold hover:bg-gray-500 transition-all duration-200" title="점수 차감 -10점">-10</button>
-                            </div>
-                        `;
-                        listContainer.appendChild(classEntry);
-                    }
+                    classDataCache.set(doc.id, { ...classData, id: doc.id, locked: !!classData.locked });
                 });
-                updateRankings();
+                renderClassesFromCache();
+                renderAdminClassManagement();
             }, (error) => {
                 console.error("Snapshot error on 'classes' collection:", error);
             });
@@ -415,8 +423,13 @@
                     document.getElementById('main-title').textContent = settings.title || '이은학교 E-페스티벌 학급 점수판';
                     document.getElementById('main-subtitle').textContent = settings.subtitle || '점수를 입력하면 순위가 실시간으로 집계됩니다.';
                     growthThresholds = sanitizeThresholds(settings.thresholds || {});
+                    lockSettings = {
+                        overall: settings.locks?.overall || false,
+                        grades: settings.locks?.grades || {}
+                    };
                     populateThresholdInputs();
-                    applyGrowthEmojis();
+                    renderClassesFromCache();
+                    renderAdminClassManagement();
                 }
             }, (error) => {
                 console.error("Snapshot error on 'settings' document:", error);
@@ -458,6 +471,63 @@
             return '🌰';
         }
 
+        function isScoreLocked(classData) {
+            return lockSettings.overall || lockSettings.grades[classData.gradeId] || !!classData.locked;
+        }
+
+        function isScoreLockedById(classId) {
+            const data = classDataCache.get(classId);
+            if (!data) return lockSettings.overall;
+            return isScoreLocked(data);
+        }
+
+        function buildClassEntry(classData) {
+            const emoji = getGrowthEmoji(classData.score || 0);
+            const classEntry = document.createElement('div');
+            const locked = isScoreLocked(classData);
+            classEntry.className = 'class-entry bg-gray-50 rounded-xl border p-3 shadow-inner flex flex-col justify-between';
+            classEntry.dataset.id = classData.id;
+            classEntry.dataset.gradeId = classData.gradeId;
+            classEntry.classList.toggle('locked', locked);
+
+            classEntry.innerHTML = `
+                <div class="flex items-center justify-between mb-2">
+                    <span class="class-name text-lg font-bold text-gray-800">${classData.name}</span>
+                    <button onclick="openEditModal(this)" class="flex-shrink-0 text-gray-500 hover:text-blue-600 transition-colors duration-200 p-1 rounded-full hover:bg-blue-100" title="학급 수정">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="class-score-row flex items-center justify-center space-x-3 my-2">
+                    <span class="class-emoji text-2xl">${emoji}</span>
+                    <span class="class-score text-2xl font-bold text-blue-700">${classData.score}점</span>
+                </div>
+                ${locked ? '' : `
+                <div class="grid grid-cols-3 gap-2 mt-2">
+                    <button onclick="addScore(this, 1)" class="px-3 py-2 bg-green-500 text-white rounded-lg text-xs font-semibold hover:bg-green-600 transition-all duration-200" title="미션 시도 +1점">+1</button>
+                    <button onclick="addScore(this, 5)" class="px-3 py-2 bg-blue-500 text-white rounded-lg text-xs font-semibold hover:bg-blue-600 transition-all duration-200" title="미션 성공 +5점">+5</button>
+                    <button onclick="addScore(this, 10)" class="px-3 py-2 bg-yellow-500 text-white rounded-lg text-xs font-semibold hover:bg-yellow-600 transition-all duration-200" title="모든 미션 성공 +10점">+10</button>
+                    <button onclick="addScore(this, -1)" class="px-3 py-2 bg-gray-400 text-white rounded-lg text-xs font-semibold hover:bg-gray-500 transition-all duration-200" title="점수 차감 -1점">-1</button>
+                    <button onclick="addScore(this, -5)" class="px-3 py-2 bg-gray-400 text-white rounded-lg text-xs font-semibold hover:bg-gray-500 transition-all duration-200" title="점수 차감 -5점">-5</button>
+                    <button onclick="addScore(this, -10)" class="px-3 py-2 bg-gray-400 text-white rounded-lg text-xs font-semibold hover:bg-gray-500 transition-all duration-200" title="점수 차감 -10점">-10</button>
+                </div>`}
+            `;
+            return classEntry;
+        }
+
+        function renderClassesFromCache() {
+            document.querySelectorAll("[id^=class-list-]").forEach(list => list.innerHTML = '');
+            classDataCache.forEach((classData) => {
+                const listContainer = document.getElementById(`class-list-${classData.gradeId}`);
+                if (listContainer) {
+                    const entry = buildClassEntry(classData);
+                    listContainer.appendChild(entry);
+                }
+            });
+            updateRankings();
+        }
+
         function sanitizeThresholds(rawThresholds) {
             const sanitized = { ...defaultThresholds, ...rawThresholds };
             sanitized.seed = 0;
@@ -487,8 +557,11 @@
 
         // 학급 추가 함수
         function addClass(gradeId) {
-            const listContainer = document.getElementById(`class-list-${gradeId}`);
-            const classCount = listContainer.querySelectorAll('.class-entry').length;
+            if (lockSettings.overall || lockSettings.grades[gradeId]) {
+                return;
+            }
+
+            const classCount = Array.from(classDataCache.values()).filter(c => c.gradeId === gradeId).length;
             
             const gradeInfo = grades.find(g => g.id === gradeId);
             let newClassName = `${classCount + 1}반`; 
@@ -514,34 +587,150 @@
             db.collection("classes").add({
                 gradeId: gradeId,
                 name: newClassName,
-                score: 0
+                score: 0,
+                locked: false
             });
         }
+
+        function renderAdminClassManagement() {
+            const container = document.getElementById('admin-class-management');
+            const overallToggle = document.getElementById('overall-lock-toggle');
+            if (!container || !overallToggle) return;
+
+            overallToggle.checked = !!lockSettings.overall;
+            overallToggle.onchange = (e) => setOverallLock(e.target.checked);
+
+            container.innerHTML = '';
+
+            grades.forEach(grade => {
+                const gradeBox = document.createElement('div');
+                const gradeLocked = !!lockSettings.grades[grade.id];
+                gradeBox.className = 'border border-gray-200 rounded-lg p-3 bg-gray-50 shadow-sm';
+                gradeBox.innerHTML = `
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center space-x-3">
+                            <h5 class="text-sm font-semibold text-blue-700">${grade.name}</h5>
+                            <label class="flex items-center space-x-1 text-xs text-gray-700">
+                                <input type="checkbox" class="grade-lock-toggle h-4 w-4 text-blue-600 border-gray-300 rounded" data-grade-id="${grade.id}" ${gradeLocked ? 'checked' : ''}>
+                                <span>학년 잠금</span>
+                            </label>
+                        </div>
+                        <button class="admin-add-class bg-blue-500 text-white px-3 py-1 rounded-lg text-xs font-semibold hover:bg-blue-600 transition-all duration-200" data-grade-id="${grade.id}">학급 추가</button>
+                    </div>
+                    <div class="space-y-2" id="admin-grade-${grade.id}-list"></div>
+                `;
+
+                const gradeList = gradeBox.querySelector(`#admin-grade-${grade.id}-list`);
+                const gradeClasses = Array.from(classDataCache.values()).filter(c => c.gradeId === grade.id).sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+
+                if (gradeClasses.length === 0) {
+                    gradeList.innerHTML = '<p class="text-xs text-gray-500">등록된 학급이 없습니다.</p>';
+                } else {
+                    gradeClasses.forEach(cls => {
+                        const row = document.createElement('div');
+                        const scoreLocked = isScoreLocked(cls);
+                        row.className = 'flex flex-wrap items-center justify-between bg-white rounded-md p-2 shadow-sm';
+                        row.innerHTML = `
+                            <div class="flex items-center space-x-2 mb-1 md:mb-0">
+                                <span class="text-sm font-semibold text-gray-800">${cls.name}</span>
+                                <label class="flex items-center space-x-1 text-xs text-gray-700">
+                                    <input type="checkbox" class="class-lock-toggle h-4 w-4 text-blue-600 border-gray-300 rounded" data-class-id="${cls.id}" ${cls.locked ? 'checked' : ''}>
+                                    <span>잠금</span>
+                                </label>
+                            </div>
+                            <div class="flex items-center space-x-2 text-sm text-gray-700">
+                                <span class="font-bold text-blue-700">${cls.score}점</span>
+                                <div class="flex space-x-1 ${scoreLocked ? 'opacity-50 pointer-events-none' : ''}">
+                                    <button class="admin-score-btn px-2 py-1 bg-green-500 text-white rounded-md text-xs font-semibold hover:bg-green-600 transition-colors duration-200" data-class-id="${cls.id}" data-delta="1">+1</button>
+                                    <button class="admin-score-btn px-2 py-1 bg-blue-500 text-white rounded-md text-xs font-semibold hover:bg-blue-600 transition-colors duration-200" data-class-id="${cls.id}" data-delta="5">+5</button>
+                                    <button class="admin-score-btn px-2 py-1 bg-gray-400 text-white rounded-md text-xs font-semibold hover:bg-gray-500 transition-colors duration-200" data-class-id="${cls.id}" data-delta="-1">-1</button>
+                                    <button class="admin-score-btn px-2 py-1 bg-gray-400 text-white rounded-md text-xs font-semibold hover:bg-gray-500 transition-colors duration-200" data-class-id="${cls.id}" data-delta="-5">-5</button>
+                                </div>
+                                <button class="admin-delete-class px-2 py-1 text-xs bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors duration-200" data-class-id="${cls.id}">삭제</button>
+                            </div>
+                        `;
+                        gradeList.appendChild(row);
+                    });
+                }
+
+                container.appendChild(gradeBox);
+            });
+
+            container.querySelectorAll('.grade-lock-toggle').forEach(toggle => {
+                toggle.onchange = (e) => setGradeLock(e.target.dataset.gradeId, e.target.checked);
+            });
+
+            container.querySelectorAll('.class-lock-toggle').forEach(toggle => {
+                toggle.onchange = (e) => updateClassLock(e.target.dataset.classId, e.target.checked);
+            });
+
+            container.querySelectorAll('.admin-add-class').forEach(btn => {
+                btn.onclick = () => addClass(btn.dataset.gradeId);
+            });
+
+            container.querySelectorAll('.admin-score-btn').forEach(btn => {
+                btn.onclick = () => changeClassScoreById(btn.dataset.classId, Number(btn.dataset.delta));
+            });
+
+            container.querySelectorAll('.admin-delete-class').forEach(btn => {
+                btn.onclick = () => deleteClassDirect(btn.dataset.classId);
+            });
+        }
+
+        function setOverallLock(locked) {
+            lockSettings.overall = locked;
+            db.collection("settings").doc("main").set({ locks: { overall: locked, grades: lockSettings.grades } }, { merge: true });
+            renderClassesFromCache();
+        }
+
+        function setGradeLock(gradeId, locked) {
+            lockSettings.grades = { ...lockSettings.grades, [gradeId]: locked };
+            db.collection("settings").doc("main").set({ locks: { overall: lockSettings.overall, grades: lockSettings.grades } }, { merge: true });
+            renderClassesFromCache();
+        }
+
+        function updateClassLock(classId, locked) {
+            const current = classDataCache.get(classId);
+            if (current) {
+                classDataCache.set(classId, { ...current, locked });
+                renderClassesFromCache();
+                renderAdminClassManagement();
+            }
+            db.collection("classes").doc(classId).set({ locked }, { merge: true });
+        }
+
+        function changeClassScoreById(classId, pointsToAdd) {
+            if (isScoreLockedById(classId)) return;
+            const classData = classDataCache.get(classId);
+            if (!classData) return;
+            const newScore = Math.max(0, (classData.score || 0) + pointsToAdd);
+            classDataCache.set(classId, { ...classData, score: newScore });
+            renderClassesFromCache();
+            renderAdminClassManagement();
+            db.collection("classes").doc(classId).update({ score: newScore });
+        }
+
+        function deleteClassDirect(classId) {
+            db.collection("classes").doc(classId).delete();
+        }
+
 
         // 점수 추가/차감 함수
         function addScore(buttonElement, pointsToAdd) {
             const classEntry = buttonElement.closest('.class-entry');
             const classId = classEntry.getAttribute('data-id');
-            const scoreElement = classEntry.querySelector('.class-score');
-            let currentScore = parseInt(scoreElement.textContent) || 0;
-            let newScore = currentScore + pointsToAdd;
-
-            if (newScore < 0) {
-                newScore = 0;
-            }
-
-            // *** 수정: 원래 컬렉션 경로("classes") 사용 ***
-            db.collection("classes").doc(classId).update({
-                score: newScore
-            });
+            changeClassScoreById(classId, pointsToAdd);
         }
 
         // '학급 수정' 모달 열기 함수
         function openEditModal(buttonElement) {
             classToEdit = buttonElement.closest('.class-entry');
             const currentName = classToEdit.querySelector('.class-name').textContent;
-            
+            const classId = classToEdit.getAttribute('data-id');
+            const classData = classDataCache.get(classId);
+
             document.getElementById('edit-name-input').value = currentName;
+            document.getElementById('edit-lock-checkbox').checked = classData ? !!classData.locked : false;
             document.getElementById('edit-modal-bg').style.display = 'flex';
             document.getElementById('edit-name-input').focus();
         }
@@ -556,12 +745,14 @@
         function confirmEdit() {
             const newNameInput = document.getElementById('edit-name-input');
             const newName = newNameInput.value.trim();
-            
+            const locked = document.getElementById('edit-lock-checkbox').checked;
+
             if (classToEdit && newName) {
                 const classId = classToEdit.getAttribute('data-id');
                 // *** 수정: 원래 컬렉션 경로("classes") 사용 ***
                 db.collection("classes").doc(classId).update({
-                    name: newName
+                    name: newName,
+                    locked: locked
                 });
             }
             hideEditModal();
