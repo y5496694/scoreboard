@@ -10,10 +10,15 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- Firebase SDK 로드 -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+    
+    <!-- 
+      Firebase SDK (v9 "compat")
+      These scripts provide the global 'firebase' object.
+    -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
     <style>
         /* Noto Sans KR 폰트 적용 */
         body {
@@ -68,7 +73,7 @@
             height: 100%;
             background-color: rgba(0, 0, 0, 0.5);
             /* Flexbox로 중앙 정렬 */
-            display: none; 
+            /* 'display: none'이 기본값이므로 flex 속성은 showModal에서 제어 */
             justify-content: center;
             align-items: center;
         }
@@ -141,7 +146,7 @@
 
     </div>
 
-    <!-- 수정 확인 모달 (새로 추가) -->
+    <!-- 수정 확인 모달 -->
     <div id="edit-modal-bg" class="flex justify-center items-center" style="display: none; position: fixed; z-index: 50; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5);">
         <div id="edit-modal" class="bg-white p-6 rounded-lg shadow-xl" style="width: 90%; max-width: 400px;">
             <h4 class="text-xl font-bold mb-4">학급 수정</h4>
@@ -167,7 +172,7 @@
         </div>
     </div>
 
-    <!-- *** 오류 수정: 누락된 삭제 확인 모달 추가 *** -->
+    <!-- 삭제 확인 모달 -->
     <div id="delete-modal-bg" class="flex justify-center items-center">
         <div id="delete-modal" class="bg-white p-6 rounded-lg shadow-xl" style="width: 90%; max-width: 400px;">
             <h4 class="text-xl font-bold mb-4">학급 삭제</h4>
@@ -234,13 +239,36 @@
     </div>
 
 
+    <!-- 
+      *** 수정된 스크립트 ***
+      - 환경 변수(__firebase_config, __app_id, __initial_auth_token)를 사용하도록 수정
+      - Firestore 경로를 환경 보안 규칙에 맞게 수정
+      - Firestore 작업이 인증(signIn) *이후*에 실행되도록 비동기(async/await) 처리
+    -->
     <script>
-        // 삭제할 학급을 임시 저장하는 변수
-        let classToDelete = null;
-        // 수정할 학급을 임시 저장하는 변수 (새로 추가)
-        let classToEdit = null;
+        // --- 1. Get Environment Variables ---
+        // 이 환경에서 제공하는 전역 변수를 사용합니다.
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-        // 관리할 학년 목록
+        // --- 2. Initialize Firebase ---
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        // 디버깅을 위해 Firestore 로그 레벨 설정
+        firebase.firestore.setLogLevel('debug');
+
+        // --- 3. Define Correct Firestore Paths ---
+        // 이 앱은 모든 사용자가 데이터를 공유하므로 "public" 경로를 사용합니다.
+        const classesCollectionPath = `artifacts/${appId}/public/data/classes`;
+        const settingsCollectionPath = `artifacts/${appId}/public/data/settings`;
+
+
+        // --- 4. Application Global Variables ---
+        let classToDelete = null;
+        let classToEdit = null;
         const grades = [
             { id: 'kinder', name: '유치원', placeholder: '예: 햇님반' },
             { id: 'elem1', name: '초등 1학년', placeholder: '예: 1반' },
@@ -251,10 +279,32 @@
             { id: 'elem6', name: '초등 6학년', placeholder: '예: 1반' }
         ];
 
-        // 페이지 로드 시 학년별 카드 생성 및 데이터 로드
-        window.onload = function() {
-            const container = document.getElementById('grade-container');
+        // --- 5. Page Load Event (Async) ---
+        // window.onload를 async 함수로 만들어 인증을 먼저 기다립니다.
+        window.onload = async function() {
+            let userId;
 
+            // --- 5a. Authentication (CRITICAL FIRST STEP) ---
+            // Firestore 규칙은 인증된 사용자만 허용하므로, 쿼리 전에 반드시 인증을 완료해야 합니다.
+            try {
+                if (initialAuthToken) {
+                    await auth.signInWithCustomToken(initialAuthToken);
+                } else {
+                    // Fallback for local testing (if token isn't present)
+                    await auth.signInAnonymously();
+                }
+                
+                userId = auth.currentUser ? auth.currentUser.uid : crypto.randomUUID();
+                console.log("Firebase Authentication successful, UserID:", userId);
+
+            } catch (error) {
+                console.error("Firebase Authentication Failed:", error);
+                document.body.innerHTML = `<h1 style='color: red; text-align: center; margin-top: 50px;'>인증 실패: 앱을 로드할 수 없습니다.</h1>`;
+                return; // 인증에 실패하면 앱 실행 중단
+            }
+
+            // --- 5b. Setup Grade Cards (HTML) ---
+            const container = document.getElementById('grade-container');
             grades.forEach(grade => {
                 const card = document.createElement('div');
                 card.className = 'grade-card bg-white p-6 rounded-2xl shadow-md flex flex-col';
@@ -277,8 +327,9 @@
                 container.appendChild(card);
             });
 
-            // Firestore 데이터 리스너 설정
-            db.collection("classes").onSnapshot((querySnapshot) => {
+            // --- 5c. Attach Firestore Listeners (NOW IT'S SAFE) ---
+            // 인증이 완료되었으므로 이제 Snapshot 리스너를 붙여도 권한 오류가 나지 않습니다.
+            db.collection(classesCollectionPath).onSnapshot((querySnapshot) => {
                 // 기존 학급 목록 초기화
                 document.querySelectorAll("[id^=class-list-]").forEach(list => list.innerHTML = '');
 
@@ -327,18 +378,22 @@
                     }
                 });
                 updateRankings();
+            }, (error) => {
+                console.error("Snapshot error on 'classes' collection:", error);
             });
 
             // 설정 데이터 리스너
-            db.collection("settings").doc("main").onSnapshot((doc) => {
+            db.collection(settingsCollectionPath).doc("main").onSnapshot((doc) => {
                 if (doc.exists) {
                     const settings = doc.data();
                     document.getElementById('main-title').textContent = settings.title || '이은학교 E-페스티벌 학급 점수판';
                     document.getElementById('main-subtitle').textContent = settings.subtitle || '점수를 입력하면 순위가 실시간으로 집계됩니다.';
                 }
+            }, (error) => {
+                console.error("Snapshot error on 'settings' document:", error);
             });
 
-            // 모달 이벤트 리스너 설정
+            // --- 5d. Setup Modal Event Listeners ---
             document.getElementById('cancel-delete').onclick = hideModal;
             document.getElementById('confirm-delete').onclick = confirmDelete;
             document.getElementById('delete-modal-bg').onclick = (e) => { if (e.target === e.currentTarget) hideModal(); };
@@ -361,13 +416,36 @@
             document.getElementById('admin-settings-modal-bg').onclick = (e) => { if (e.target === e.currentTarget) hideAdminSettingsModal(); };
         };
 
+        // --- 6. Application Functions ---
+        // (모든 함수들이 올바른 DB 경로를 참조하도록 수정)
+
         // 학급 추가 함수
         function addClass(gradeId) {
             const listContainer = document.getElementById(`class-list-${gradeId}`);
             const classCount = listContainer.querySelectorAll('.class-entry').length;
-            const newClassName = `${classCount + 1}반`;
+            
+            const gradeInfo = grades.find(g => g.id === gradeId);
+            let newClassName = `${classCount + 1}반`; 
+            if (gradeInfo && gradeInfo.placeholder.includes('반')) {
+                let placeholderName = gradeInfo.placeholder.split(' ').pop(); 
+                let baseName = placeholderName.replace('반', ''); 
+                let baseNumber = parseInt(baseName);
+                if (!isNaN(baseNumber)) {
+                    newClassName = `${baseNumber + classCount}반`;
+                } else {
+                    newClassName = `${baseName} ${classCount + 1}`;
+                }
+            } else if (gradeInfo) {
+                let baseName = gradeInfo.placeholder.split(' ').pop();
+                newClassName = `${baseName} ${classCount + 1}`;
+            }
+            
+             if (gradeId.includes('kinder')) {
+                 newClassName = `${classCount + 1}반`;
+             }
 
-            db.collection("classes").add({
+            // *** 수정: 올바른 경로 사용 ***
+            db.collection(classesCollectionPath).add({
                 gradeId: gradeId,
                 name: newClassName,
                 score: 0
@@ -386,12 +464,13 @@
                 newScore = 0;
             }
 
-            db.collection("classes").doc(classId).update({
+            // *** 수정: 올바른 경로 사용 ***
+            db.collection(classesCollectionPath).doc(classId).update({
                 score: newScore
             });
         }
 
-        // *** '학급 수정' 모달 열기 함수 (새로 추가) ***
+        // '학급 수정' 모달 열기 함수
         function openEditModal(buttonElement) {
             classToEdit = buttonElement.closest('.class-entry');
             const currentName = classToEdit.querySelector('.class-name').textContent;
@@ -401,45 +480,32 @@
             document.getElementById('edit-name-input').focus();
         }
 
-        // *** '학급 수정' 모달 숨기기 함수 (새로 추가) ***
+        // '학급 수정' 모달 숨기기 함수
         function hideEditModal() {
             document.getElementById('edit-modal-bg').style.display = 'none';
             classToEdit = null;
         }
 
-        // *** '학급 수정' 팝업에서 '확인' 눌렀을 때 (새로 추가) ***
+        // '학급 수정' 팝업에서 '확인' 눌렀을 때
         function confirmEdit() {
             const newNameInput = document.getElementById('edit-name-input');
             const newName = newNameInput.value.trim();
             
             if (classToEdit && newName) {
                 const classId = classToEdit.getAttribute('data-id');
-                db.collection("classes").doc(classId).update({
+                // *** 수정: 올바른 경로 사용 ***
+                db.collection(classesCollectionPath).doc(classId).update({
                     name: newName
                 });
             }
             hideEditModal();
         }
 
-        // *** '학급 수정' 팝업에서 '삭제' 눌렀을 때 (새로 추가) ***
+        // '학급 수정' 팝업에서 '삭제' 눌렀을 때
         function triggerDeleteFromEdit() {
-            // 수정 중이던 학급을 삭제 대상으로 지정
             classToDelete = classToEdit;
-            
-            // 수정 팝업 닫기
             hideEditModal(); 
             
-            // 삭제 팝업 열기 (기존 로직 재사용)
-            document.getElementById('modal-error').textContent = '';
-            document.getElementById('password-input').value = '';
-            document.getElementById('delete-modal-bg').style.display = 'flex';
-            document.getElementById('password-input').focus();
-        }
-
-
-        // 학급 삭제 함수 (모달 띄우기) - 이 함수는 이제 triggerDeleteFromEdit에 의해 호출됨
-        function deleteClass(buttonElement) {
-            classToDelete = buttonElement.closest('.class-entry');
             document.getElementById('modal-error').textContent = '';
             document.getElementById('password-input').value = '';
             document.getElementById('delete-modal-bg').style.display = 'flex';
@@ -457,10 +523,11 @@
             const password = document.getElementById('password-input').value;
             const errorEl = document.getElementById('modal-error');
             
-            if (password === '20230301') { // 비밀번호 수정
+            if (password === '20230301') { // 비밀번호
                 if (classToDelete) {
                     const classId = classToDelete.getAttribute('data-id');
-                    db.collection("classes").doc(classId).delete();
+                    // *** 수정: 올바른 경로 사용 ***
+                    db.collection(classesCollectionPath).doc(classId).delete();
                 }
                 hideModal();
             } else {
@@ -475,7 +542,6 @@
         function updateRankings() {
             const allClasses = [];
             
-            // 모든 학급 항목을 순회하며 정보 수집
             document.querySelectorAll('.class-entry').forEach(entry => {
                 const classNameElement = entry.querySelector('.class-name');
                 const scoreElement = entry.querySelector('.class-score');
@@ -483,15 +549,13 @@
                 const gradeName = gradeCard.querySelector('h3').textContent;
                 
                 const className = classNameElement.textContent;
-                const score = parseInt(scoreElement.textContent) || 0; // "점"을 제외하고 파싱
+                const score = parseInt(scoreElement.textContent) || 0;
                 
                 allClasses.push({ name: className, score: score, grade: gradeName });
             });
             
-            // 점수 기준으로 내림차순 정렬
             allClasses.sort((a, b) => b.score - a.score);
             
-            // 1등, 2등, 3등 UI 업데이트
             const rankElements = [
                 { id: 1, classEl: 'rank-1-class', scoreEl: 'rank-1-score' },
                 { id: 2, classEl: 'rank-2-class', scoreEl: 'rank-2-score' },
@@ -514,7 +578,7 @@
             });
         }
         
-        // *** 관리자 설정 관련 함수들 (새로 추가) ***
+        // 관리자 설정 관련 함수들
 
         // 관리자 비밀번호 모달 열기
         function openAdminPassModal() {
@@ -546,7 +610,6 @@
 
         // 관리자 설정 모달 열기 (비밀번호 성공 후)
         function openAdminSettingsModal() {
-            // 현재 제목과 설명을 입력창에 미리 채워넣기
             document.getElementById('title-input').value = document.getElementById('main-title').textContent.trim();
             document.getElementById('subtitle-input').value = document.getElementById('main-subtitle').textContent.trim();
             
@@ -563,32 +626,14 @@
             const newTitle = document.getElementById('title-input').value.trim();
             const newSubtitle = document.getElementById('subtitle-input').value.trim();
             
-            db.collection("settings").doc("main").set({
+            // *** 수정: 올바른 경로 사용 ***
+            db.collection(settingsCollectionPath).doc("main").set({
                 title: newTitle,
                 subtitle: newSubtitle
             }, { merge: true });
             
             hideAdminSettingsModal();
         }
-    </script>
-    <script>
-        // Your web app's Firebase configuration
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-        const firebaseConfig = {
-        apiKey: "AIzaSyB6G99nhN9cTPYp_Va_L3Jyg1ZudzownPE",
-        authDomain: "scoreboard-92a21.firebaseapp.com",
-        projectId: "scoreboard-92a21",
-        storageBucket: "scoreboard-92a21.firebasestorage.app",
-        messagingSenderId: "1016713769386",
-        appId: "1:1016713769386:web:fc331ff8e301b07c2ebbd3",
-        measurementId: "G-EWX63T6EGZ"
-        };
-
-        // Initialize Firebase
-        // Initialize Firebase
-        const app = firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        firebase.auth().signInAnonymously();
     </script>
 
 </body>
